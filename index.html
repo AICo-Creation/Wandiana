@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>Tales of Wonderana</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      :root {
+        color-scheme: only light;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", "Hiragino Sans", "Yu Gothic", sans-serif;
+        min-height: 100vh;
+        background: #050510;
+        color: #fff;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      body.scene-mode {
+        display: block;
+      }
+
+      .title-screen {
+        position: relative;
+        width: min(90vw, 1280px);
+        aspect-ratio: 16 / 9;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(10, 5, 40, 0.65);
+        cursor: pointer;
+        transition: opacity 0.4s ease;
+      }
+
+      .title-art {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .title-screen.is-hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .title-text {
+        position: absolute;
+        top: 14%;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: clamp(2.5rem, 4vw, 4.5rem);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        text-shadow: 0 0 15px rgba(255, 210, 120, 0.85), 0 0 40px rgba(255, 165, 0, 0.65);
+        background: linear-gradient(180deg, #fff8cc 0%, #f6c66f 55%, #f6a539 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .start-button {
+        position: absolute;
+        top: 42%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 0.85rem 2.5rem;
+        font-size: clamp(1.1rem, 2vw, 1.6rem);
+        border: none;
+        border-radius: 999px;
+        background: linear-gradient(135deg, rgba(255, 234, 153, 0.95), rgba(255, 170, 50, 0.95));
+        color: #3b2200;
+        font-weight: 700;
+        box-shadow: 0 12px 24px rgba(255, 188, 68, 0.45);
+        opacity: 0;
+        transform-origin: center;
+        transition: opacity 0.45s ease, transform 0.45s ease;
+        pointer-events: none;
+      }
+
+      .start-button.visible {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.02);
+        pointer-events: auto;
+      }
+
+      .start-button:focus-visible {
+        outline: 3px solid rgba(255, 255, 255, 0.8);
+        outline-offset: 4px;
+      }
+
+      .start-button:hover {
+        transform: translate(-50%, -50%) scale(1.05);
+        box-shadow: 0 18px 40px rgba(255, 188, 68, 0.55);
+      }
+
+      footer {
+        position: absolute;
+        bottom: 2.5%;
+        width: 100%;
+        text-align: center;
+        font-size: clamp(0.7rem, 1.2vw, 1rem);
+        color: rgba(255, 255, 255, 0.75);
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+      }
+
+      .scene-screen {
+        position: fixed;
+        inset: 0;
+        display: none;
+        overflow: hidden;
+        cursor: pointer;
+      }
+
+      .scene-screen.active {
+        display: block;
+      }
+
+      .scene-art {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .scene-overlay {
+        position: absolute;
+        left: 50%;
+        bottom: 0;
+        transform: translateX(-50%);
+        width: min(92vw, 1080px);
+        padding: 1.6rem;
+        display: none;
+        flex-direction: column;
+        gap: 1.3rem;
+        background: rgba(10, 12, 30, 0.78);
+        border-radius: 28px 28px 0 0;
+        box-shadow: 0 -20px 70px rgba(5, 5, 20, 0.65);
+        backdrop-filter: blur(14px);
+      }
+
+      .scene-overlay.revealed {
+        display: flex;
+      }
+
+      .scene-prompt {
+        position: absolute;
+        bottom: 3%;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 0.65rem 1.6rem;
+        border-radius: 999px;
+        background: rgba(6, 12, 28, 0.7);
+        color: rgba(255, 255, 255, 0.88);
+        font-size: 0.95rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+      }
+
+      .scene-prompt.visible {
+        opacity: 1;
+      }
+
+      .story-input {
+        width: 100%;
+        min-height: 130px;
+        padding: 1rem 1.2rem;
+        border-radius: 18px;
+        border: none;
+        font-size: 1rem;
+        line-height: 1.6;
+        resize: vertical;
+        background: rgba(255, 255, 255, 0);
+        color: #fff;
+        text-shadow: 0 0 8px rgba(0, 0, 0, 0.55);
+      }
+
+      .story-input:focus-visible {
+        outline: 3px solid rgba(246, 198, 111, 0.85);
+        outline-offset: 3px;
+      }
+
+      .choice-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.85rem;
+      }
+
+      .choice-option {
+        min-height: 80px;
+        border-radius: 18px;
+        border: 2px solid rgba(255, 255, 255, 0.28);
+        background: linear-gradient(135deg, rgba(12, 20, 40, 0.72), rgba(18, 28, 58, 0.9));
+        color: #fff;
+        font-size: 1rem;
+        font-weight: 600;
+        padding: 1rem 1.4rem;
+        text-align: left;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: transform 0.2s ease, box-shadow 0.3s ease, border-color 0.25s ease;
+      }
+
+      .choice-option:hover {
+        border-color: rgba(246, 198, 111, 0.8);
+        box-shadow: 0 12px 32px rgba(8, 6, 22, 0.45);
+        transform: translateY(-3px);
+      }
+
+      .choice-option:disabled {
+        cursor: default;
+        opacity: 1;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .choice-index {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.6rem;
+        height: 2.6rem;
+        border-radius: 0.9rem;
+        background: rgba(255, 255, 255, 0.15);
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #ffeac4;
+        letter-spacing: 0.06em;
+        flex-shrink: 0;
+      }
+
+      .choice-label {
+        flex: 1;
+        line-height: 1.6;
+      }
+
+      .choice-feedback {
+        margin: 0;
+        font-size: 0.95rem;
+        color: rgba(255, 255, 255, 0.85);
+        text-align: center;
+      }
+
+      .score-node {
+        position: fixed;
+        top: clamp(0.8rem, 3vw, 1.6rem);
+        right: clamp(0.8rem, 4vw, 2.2rem);
+        padding: 0.55rem 1.1rem;
+        border-radius: 16px;
+        background: rgba(8, 10, 26, 0.72);
+        box-shadow: 0 16px 40px rgba(4, 6, 18, 0.45);
+        backdrop-filter: blur(12px);
+        display: flex;
+        align-items: baseline;
+        gap: 0.6rem;
+        z-index: 10;
+        pointer-events: none;
+      }
+
+      .score-label {
+        font-size: 0.78rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: rgba(255, 238, 210, 0.72);
+      }
+
+      .score-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.92);
+        text-shadow: 0 0 10px rgba(255, 210, 150, 0.45);
+      }
+
+      .adventure-screen {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: min(6vw, 80px);
+        --scene-art: none;
+        background: var(--scene-art) center / cover no-repeat,
+          radial-gradient(circle at 20% 20%, rgba(255, 240, 220, 0.18), transparent 55%),
+          #03040f;
+        overflow-y: auto;
+        cursor: pointer;
+      }
+
+      .adventure-screen.active {
+        display: flex;
+      }
+
+      .adventure-screen.panel-visible {
+        cursor: default;
+      }
+
+      .adventure-panel {
+        width: min(960px, 100%);
+        background: rgba(18, 20, 38, 0.68);
+        border-radius: 28px;
+        padding: clamp(1.8rem, 3vw, 2.6rem);
+        box-shadow: 0 30px 90px rgba(8, 6, 30, 0.75);
+        backdrop-filter: blur(16px);
+        display: flex;
+        flex-direction: column;
+        gap: clamp(1.2rem, 2.2vw, 1.8rem);
+        opacity: 0;
+        transform: translateY(24px);
+        transition: opacity 0.45s ease, transform 0.45s ease;
+        pointer-events: none;
+      }
+
+      .adventure-screen.panel-visible .adventure-panel {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+      }
+
+      .adventure-title {
+        margin: 0;
+        font-size: clamp(1.5rem, 3vw, 2.1rem);
+        letter-spacing: 0.06em;
+      }
+
+      .adventure-summary {
+        margin: 0;
+        line-height: 1.7;
+        color: rgba(255, 255, 255, 0.78);
+      }
+
+      .question-counter {
+        font-size: 0.92rem;
+        color: rgba(255, 255, 255, 0.7);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .question-text {
+        margin: 0;
+        font-size: clamp(1.1rem, 2.6vw, 1.5rem);
+        line-height: 1.6;
+      }
+
+      .adventure-options {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.9rem;
+      }
+
+      .adventure-feedback {
+        min-height: 1.6em;
+        margin: 0;
+        font-size: 1rem;
+        color: rgba(255, 236, 204, 0.92);
+      }
+
+      .adventure-feedback.retry {
+        color: rgba(255, 180, 180, 0.9);
+      }
+
+      .adventure-complete {
+        text-align: center;
+        font-size: clamp(1.3rem, 3vw, 1.8rem);
+        color: rgba(255, 255, 255, 0.92);
+      }
+
+      .adventure-overlay-message {
+        position: absolute;
+        bottom: clamp(60px, 10vh, 120px);
+        left: 50%;
+        transform: translateX(-50%);
+        max-width: min(820px, 86vw);
+        padding: clamp(1rem, 2vw, 1.4rem) clamp(1.4rem, 3vw, 2.2rem);
+        border-radius: 24px;
+        background: rgba(10, 14, 30, 0.72);
+        box-shadow: 0 20px 50px rgba(4, 6, 18, 0.6);
+        backdrop-filter: blur(14px);
+        color: rgba(255, 255, 255, 0.92);
+        font-size: clamp(1rem, 2.3vw, 1.3rem);
+        line-height: 1.7;
+        text-align: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.35s ease;
+      }
+
+      .adventure-overlay-message.visible {
+        opacity: 1;
+      }
+
+      .adventure-overlay-message .overlay-instruction {
+        display: block;
+        margin-top: 0.65rem;
+        font-size: 0.9rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(255, 240, 220, 0.82);
+      }
+
+      .adventure-overlay-message .overlay-main {
+        display: block;
+        line-height: 1.7;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="score-node" id="scoreNode">
+      <span class="score-label">SCORE</span>
+      <span class="score-value" id="scoreValue">0</span>
+    </div>
+    <div class="title-screen" id="titleScreen" role="presentation">
+      <img
+        class="title-art"
+        src="images/Gemini_Generated_Image_wz880vwz880vwz88.png"
+        alt="Magical scene with a girl holding a glowing book leading to a fantasy castle"
+      />
+      <h1 class="title-text">Tales of Wonderana</h1>
+      <button class="start-button" id="startButton" type="button">Start</button>
+      <footer>Click anywhere to begin the tale…</footer>
+    </div>
+    <div class="scene-screen" id="sceneScreen" role="presentation">
+      <img
+        class="scene-art"
+        src="images/Gemini_Generated_Image_3m7pk83m7pk83m7p.jpeg"
+        alt="Fantasy landscape for Wonderana story scene"
+      />
+      <div class="scene-overlay" id="sceneOverlay">
+        <textarea
+          class="story-input"
+          id="storyInput"
+          readonly
+        >古い魔導書を開いた紬ちゃんの指先から光があふれ、ページ全体が柔らかな輝きに包まれた。</textarea>
+      <div class="choice-grid" aria-label="Multiple choice options">
+          <button class="choice-option" data-choice="wrong">
+            <span class="choice-index">1</span>
+            <span class="choice-label">すぐに本を閉じる</span>
+          </button>
+          <button class="choice-option" data-choice="correct">
+            <span class="choice-index">2</span>
+            <span class="choice-label">不思議な気持ちで本を見つめる</span>
+          </button>
+          <button class="choice-option" data-choice="wrong">
+            <span class="choice-index">3</span>
+            <span class="choice-label">本に仕掛けがあると思う</span>
+          </button>
+          <button class="choice-option" data-choice="wrong">
+            <span class="choice-index">4</span>
+            <span class="choice-label">無視する</span>
+          </button>
+        </div>
+        <p class="choice-feedback" id="prologueFeedback" aria-live="polite"></p>
+      </div>
+      <div class="scene-prompt" id="scenePrompt" aria-live="polite" hidden></div>
+    </div>
+    <div class="adventure-screen" id="adventureScreen" role="presentation" aria-live="polite">
+      <div class="adventure-panel" id="adventurePanel">
+        <h2 class="adventure-title" id="sceneTitle"></h2>
+        <p class="adventure-summary" id="sceneSummary"></p>
+        <div class="question-counter" id="questionCounter"></div>
+        <p class="question-text" id="questionText"></p>
+        <div class="adventure-options" id="adventureOptions"></div>
+        <p class="adventure-feedback" id="adventureFeedback"></p>
+        <div class="adventure-complete" id="adventureComplete" hidden></div>
+      </div>
+      <div class="adventure-overlay-message" id="adventureOverlayMessage" hidden></div>
+    </div>
+    <audio id="bgm" src="music/Wonderana&#39;s Lullaby.wav" preload="auto" loop></audio>
+
+    <script>
+      (function () {
+        const titleScreen = document.getElementById("titleScreen");
+        const startButton = document.getElementById("startButton");
+        const bgm = document.getElementById("bgm");
+        const sceneScreen = document.getElementById("sceneScreen");
+        const sceneOverlay = document.getElementById("sceneOverlay");
+        const prologueFeedback = document.getElementById("prologueFeedback");
+        const prologueChoices = Array.from(
+          document.querySelectorAll(".choice-option")
+        );
+        const scenePrompt = document.getElementById("scenePrompt");
+        const adventureScreen = document.getElementById("adventureScreen");
+        const adventurePanel = document.getElementById("adventurePanel");
+        const sceneTitle = document.getElementById("sceneTitle");
+        const sceneSummary = document.getElementById("sceneSummary");
+        const questionCounter = document.getElementById("questionCounter");
+        const questionText = document.getElementById("questionText");
+        const adventureOptions = document.getElementById("adventureOptions");
+        const adventureFeedback = document.getElementById("adventureFeedback");
+        const adventureComplete = document.getElementById("adventureComplete");
+        const adventureOverlayMessage = document.getElementById(
+          "adventureOverlayMessage"
+        );
+        const scoreValue = document.getElementById("scoreValue");
+
+        const scenes = [
+          {
+            id: "scene2",
+            title: "シーン2：言葉を忘れた森",
+            summary:
+              "森の奥で、あなたは一羽の美しい小鳥に出会います。しかし、その小鳥は元気がなく、美しい声で歌うことができなくなってしまったようです。賢いフクロウ『ノクト』が隣の枝からあなたと小鳥を静かに見守っています。どうすれば、小鳥は再び歌えるようになるでしょうか。",
+            background: "images/Gemini_Generated_Image_3m7pk93m7pk93m7p.jpeg",
+            closing:
+              "小鳥は自分の想いを歌に込め、森いっぱいに優しい旋律が広がった。ノクトが誇らしげに羽を鳴らし、次の旅路が光り始める。",
+            questions: [
+              {
+                text:
+                  "【質問1】歌えなくなった小鳥が、悲しそうにうつむいています。あなたはどうしますか？",
+                options: [
+                  "本に書かれている『元気が出る魔法の言葉』を読み聞かせる。",
+                  "フクロウのノクトに、森のルールや小鳥が歌えない原因について詳しく尋ねる。",
+                  "『どうして歌えなくなっちゃったの？』と、小鳥自身の気持ちを優しく尋ねる。",
+                  "歌い方を忘れてしまったのかもしれないと思い、見本としてあなたが歌ってあげる。",
+                ],
+                correctIndex: 2,
+                explanation:
+                  "まずは小鳥の気持ちに寄り添い、その声を聞くことが信頼への第一歩。あなたが耳を傾けた瞬間、小鳥の瞳に少しだけ光が戻る。",
+              },
+              {
+                text:
+                  "【質問2】小鳥は『以前、僕の歌はヘタだって、他の鳥に笑われたんだ』と打ち明けました。あなたはどうしますか？",
+                options: [
+                  "『そんな意地悪な鳥は気にしなくていいよ』と励まし、強くなるように元気づける。",
+                  "本を開き、『自分の声を見つけた臆病なライオン』の物語を読み聞かせる。",
+                  "『じゃあ、他の鳥がいない秘密の場所で練習しよう』と提案する。",
+                  "原因がわかったので、ノクトに頼んで、その意地悪な鳥たちを注意してもらう。",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "小鳥が失ったのは勇気ではなく、自分を信じる力。似た物語を聞かせることで、心の奥で眠っていた自信がそっと目を覚ます。",
+              },
+              {
+                text:
+                  "【質問3】小鳥はまだ歌い出すことを躊躇しています。あなたならどんな言葉をかけますか？",
+                options: [
+                  "『大丈夫、僕が隣で一緒に歌ってあげる。さあ、一緒に！』とデュエットに誘う。",
+                  "『完璧じゃなくてもいいんだよ。誰かのためじゃなく、今の君の気持ちを、君自身のために歌ってみて』と語りかける。",
+                  "『もし歌えたら、きっと森の精霊が素敵なご褒美をくれるはずだよ』と期待を持たせる。",
+                  "『君の歌声はきっと素晴らしいはずだよ。僕が保証するから、信じて歌ってみて』と強く背中を押す。",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "評価のためではなく、自分の心に向けて歌う喜びを伝えた瞬間、小鳥は胸いっぱいに息を吸い込み、新しい旋律が生まれた。",
+              },
+            ],
+          },
+          {
+            id: "scene3",
+            title: "シーン3：時が止まった街",
+            summary:
+              "時が止まった街の中心にある時計塔。頑固な時計職人が動かなくなった歯車の前で腕を組み、時間は静止したままです。彼の心を開かなければ街の鐘は再び響きません。",
+            background: "images/Gemini_Generated_Image_3m7pka3m7pka3m7p.jpeg",
+            closing:
+              "止まっていた歯車が静かに回り始め、街に時計の音と温かな光が戻ってきた。職人は黙って頷き、紬ちゃんに新しい時間を託す。",
+            questions: [
+              {
+                text:
+                  "【質問1】怒鳴った時計職人に、あなたはどう声をかけますか？",
+                options: [
+                  "『この街の時間を元に戻しに来ました』と単刀直入に告げる。",
+                  "『すごい時計塔ですね。あなたが全部作ったんですか？』と仕事に敬意を払う。",
+                  "黙って設計図を眺め、問題点を探し始める。",
+                  "『あなたの助けはいりません、自分で直します』と挑発する。",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "職人の誇りを尊重すると、閉ざされていた心の扉が少し開いた。",
+              },
+              {
+                text:
+                  "【質問2】『特別な歯車が失くなった』と打ち明けられました。あなたは？",
+                options: [
+                  "『一緒に探します！』と、すぐ行動に移す。",
+                  "『特別な歯車って、どんな思い出があるんですか？』と尋ねる。",
+                  "本で失せ物の魔法を探す。",
+                  "『一つなくても動きそうだけど？』と構造を疑う。",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "歯車に宿る想いを尋ねることで、彼自身も忘れていた痛みと向き合えた。",
+              },
+              {
+                text:
+                  "【質問3】亡き妻の贈り物だと知ったあなたの言葉は？",
+                options: [
+                  "『思い出は心にあるから大丈夫』と論理で説得する。",
+                  "『僕がもっと素敵な思い出を作ります』と未来を約束する。",
+                  "『その歯車は“時間を進めてほしい”という願いかもしれませんね』と伝える。",
+                  "『気持ちはわかります。でもみんなが困っています』と責任を促す。",
+                ],
+                correctIndex: 2,
+                explanation:
+                  "贈り物を妻の願いとして捉え直した瞬間、前へ進む勇気が彼の胸に灯った。",
+              },
+            ],
+          },
+          {
+            id: "scene4",
+            title: "シーン4：嘘つきのいるオアシス",
+            summary:
+              "砂漠のオアシスで、一人の商人が水を独占し『恐ろしい魔物がいるから』と旅人を脅かしています。彼の嘘の裏に隠された本当の物語を見つけましょう。",
+            background: "images/Gemini_Generated_Image_3m7pkb3m7pkb3m7p.jpeg",
+            closing:
+              "商人は独占していた水を解放し、旅人たちに笑顔が広がる。砂漠の風が澄み、オアシスに本当の安らぎが戻った。",
+            questions: [
+              {
+                text:
+                  "【質問1】商人への最初のアプローチは？",
+                options: [
+                  "皆の前で『嘘つきだ』と暴く。",
+                  "魔物を信じたふりをして協力を申し出る。",
+                  "彼の話を全て聞き、嘘の背景を探る。",
+                  "無視して勝手に水を飲む。",
+                ],
+                correctIndex: 2,
+                explanation:
+                  "彼の言葉を最後まで聞いたことで、嘘の裏にある孤独が見えてきた。",
+              },
+              {
+                text:
+                  "【質問2】『誰も俺の言うことなんて信じない』と叫ぶ商人に？",
+                options: [
+                  "『信じますよ、魔物のことを教えて』と乗る。",
+                  "『昔、何か辛いことがあったんですね』と過去に寄り添う。",
+                  "『嘘をつくから信じてもらえないんですよ』と指摘する。",
+                  "『信じるかは僕が決める』と突き放す。",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "過去の痛みに寄り添う声が、心にこびりついた不信感を溶かしていく。",
+              },
+              {
+                text:
+                  "【質問3】追放された過去を語った商人へ、最後の一言は？",
+                options: [
+                  "『その昔話、僕だけは信じます』と肯定する。",
+                  "『本当のことだけ話すなら仲間を連れてきます』と取引する。",
+                  "『僕が魔物を探して証明します』と奔走する。",
+                  "『過去は過去。今の嘘をやめて』と諭す。",
+                ],
+                correctIndex: 0,
+                explanation:
+                  "誰にも信じてもらえなかった記憶を肯定すると、彼は再び真実を語る勇気を持てた。",
+              },
+            ],
+          },
+          {
+            id: "scene5",
+            title: "シーン5：映らない真実の湖",
+            summary:
+              "真実を映すはずの湖が濁り、小さな妖精は『私には輝きがない』と肩を落としています。彼女が自分の光を見つけられるよう支えましょう。",
+            background: "images/Gemini_Generated_Image_3m7pkc3m7pkc3m7p.jpeg",
+            closing:
+              "濁っていた湖面が澄み、妖精の羽が柔らかな光を帯びる。彼女は自分の優しさこそが輝きだと微笑んだ。",
+            questions: [
+              {
+                text:
+                  "【質問1】自信をなくした妖精への最初の言葉は？",
+                options: [
+                  "『君はとっても可愛いよ！』と褒める。",
+                  "『“キラキラ”ってどんなこと？』とコンプレックスの正体を尋ねる。",
+                  "『この本でキラキラにしてあげる』と魔法を示唆する。",
+                  "『僕も自信がない時があるよ』と自分の弱みを語る。",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "彼女が抱える悩みを具体的に尋ねることで、心の内を語る勇気が生まれた。",
+              },
+              {
+                text:
+                  "【質問2】虹色の羽に憧れる妖精へ、あなたは？",
+                options: [
+                  "飾りを作って外見を整える。",
+                  "『優しい香りで皆を癒した花』の物語を読み聞かせる。",
+                  "『見た目だけが全てじゃない』と諭す。",
+                  "他の妖精にコツを聞きに行く。",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "似た物語を重ねると、自分にも価値があると想像できるようになった。",
+              },
+              {
+                text:
+                  "【質問3】まだ俯く妖精に届ける最後の言葉は？",
+                options: [
+                  "『泣いていた虫を助けていたよ。それが君だけの輝きだ』と伝える。",
+                  "『輝きは努力で手に入る。一緒に頑張ろう』と励ます。",
+                  "『誰かと比べなくていいよ』と抽象的に語る。",
+                  "『湖をもう一度見て。きっと映るよ』と奇跡を期待させる。",
+                ],
+                correctIndex: 0,
+                explanation:
+                  "誰も気づかなかった優しさを示すと、彼女は初めて自分の光を信じられた。",
+              },
+            ],
+          },
+          {
+            id: "scene6",
+            title: "シーン6：沈黙の図書館",
+            summary:
+              "ワンディアナの中心にある巨大図書館。ほとんどの本から文字が消えています。失われた言葉の痕跡を辿り、沈黙の王への道を開きましょう。",
+            background: "images/Gemini_Generated_Image_3m7pkd3m7pkd3m7p.jpeg",
+            closing:
+              "冷たい風が案内に変わり、隠された扉が静かに開いた。忘れられた物語たちが再びページへと戻り始める。",
+            questions: [
+              {
+                text:
+                  "【質問1】無数の空っぽの本の中で、最初に選ぶのは？",
+                options: [
+                  "豪華な装丁の重要そうな本。",
+                  "貸出記録を調べ、最後に借りられた本。",
+                  "床に転がっている一冊。",
+                  "一番悲しい気配がする本。",
+                ],
+                correctIndex: 3,
+                explanation:
+                  "悲しみの気配に導かれた選択が、忘れられた物語への扉を開いた。",
+              },
+              {
+                text:
+                  "【質問2】『誰も読んでくれなかった』と滲む本へ、あなたは？",
+                options: [
+                  "失われた部分に新しい物語を書く。",
+                  "本を撫で、『辛かったね』と共感を伝える。",
+                  "著者を呼び出す魔法を使う。",
+                  "目立つ場所に戻してあげる。",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "本の痛みに寄り添うと、閉ざされていた声が確かに応えてくれた。",
+              },
+              {
+                text:
+                  "【質問3】冷たい風が隠された扉へ流れていきます。何を意味している？",
+                options: [
+                  "著者が罠を仕掛けている。",
+                  "王の孤独や哀しみそのものだ。",
+                  "強大な魔力の封印がある証拠。",
+                  "失われた物語の書庫があるサイン。",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "風を王の孤独と捉えたことで、進むべき道が心の奥に浮かび上がった。",
+              },
+            ],
+          },
+          {
+            id: "scene7",
+            title: "シーン7：忘却の城への道",
+            summary:
+              "哀しみの谷を覆う濃い霧が、旅の終盤で紬ちゃんとノクトの心を試します。霧に飲まれないよう、互いを支え合う力が必要です。",
+            background: "images/Gemini_Generated_Image_3m7pke3m7pke3m7p.jpeg",
+            closing:
+              "ノクトと紬ちゃんが肩を並べると霧がゆっくり晴れ、光の道が現れた。二人の絆が谷に新しい風を呼び込む。",
+            questions: [
+              {
+                text:
+                  "【質問1】弱気になるノクトにかける言葉は？",
+                options: [
+                  "『しっかりして！』と使命感を訴える。",
+                  "『僕に任せて』と自信を見せる。",
+                  "『ここまで一緒に来てくれてありがとう』と感謝を伝える。",
+                  "『弱音を吐くなんて君らしくない』と奮い立たせる。",
+                ],
+                correctIndex: 2,
+                explanation:
+                  "感謝の言葉でノクトの役割を認めると、彼の翼に再び力が宿った。",
+              },
+              {
+                text:
+                  "【質問2】過去の幻に怯えるノクトとどう向き合う？",
+                options: [
+                  "聖なる光で霧を吹き飛ばす。",
+                  "目を覆って『僕だけを見て』と伝える。",
+                  "『これは王様の哀しみだ』と冷静に分析する。",
+                  "旅で嬉しかった記憶を一緒に思い出す。",
+                ],
+                correctIndex: 3,
+                explanation:
+                  "嬉しい記憶を分かち合うことで、絶望の霧が少しずつ和らいだ。",
+              },
+              {
+                text:
+                  "【質問3】最後の一歩を踏み出すための言葉は？",
+                options: [
+                  "『僕が先に行くから待ってて』と庇う。",
+                  "『君の賢い目が必要だ。一緒に道を探そう』と頼る。",
+                  "『霧の先には素晴らしい景色がある！』と励ます。",
+                  "『あと少しだ、急ごう！』と急かす。",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "頼られていると伝えられたノクトは、もう一度前を向く勇気を得た。",
+              },
+            ],
+          },
+          {
+            id: "scene8",
+            title: "シーン8：城の番人",
+            summary:
+              "忘却の城の門には、王の最初の物語を刻んだゴーレムが立ちはだかります。力ではなく敬意こそが通行の鍵です。",
+            background: "images/Gemini_Generated_Image_3m7pkf3m7pkf3m7p.jpeg",
+            closing:
+              "ゴーレムは拳を下ろし、石の胸から柔らかな光がこぼれた。敬意を受け取った彼が、重たい扉を静かに開く。",
+            questions: [
+              {
+                text:
+                  "【質問1】拳を振り上げたゴーレムにどうする？",
+                options: [
+                  "魔法で防御壁を作る。",
+                  "『敵じゃない！』と叫ぶ。",
+                  "ノクトに弱点探しを頼む。",
+                  "本を閉じ、静かにお辞儀をする。",
+                ],
+                correctIndex: 3,
+                explanation:
+                  "武器を降ろして敬意を示すと、ゴーレムも敵意を解いた。",
+              },
+              {
+                text:
+                  "【質問2】動きを止めたゴーレムへ次に取る行動は？",
+                options: [
+                  "止まっている間に門を抜ける。",
+                  "刻まれた文字を指し『読ませてくれますか？』と尋ねる。",
+                  "『王に会いに来た』と目的を伝える。",
+                  "供え物を置いて機嫌を取る。",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "刻まれた文字に目を向けることで、彼の存在理由に寄り添えた。",
+              },
+              {
+                text:
+                  "【質問3】門を開けてもらうための最後の言葉は？",
+                options: [
+                  "『結末を素晴らしく書き換えます』と提案する。",
+                  "『物語を敬意をもって読ませてください』とお願いする。",
+                  "『王を救うために来た、通すのが役目だ』と説得する。",
+                  "『悲しい物語は忘れてしまおう』と諭す。",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "物語を大切に読みたいと願う言葉が、門番の使命と響き合った。",
+              },
+            ],
+          },
+          {
+            id: "scene9",
+            title: "シーン9：沈黙の王",
+            summary:
+              "玉座の間で待つ沈黙の王。忘れられた物語の痛みに囚われた彼の心を、紬ちゃんの共感で解きほぐしましょう。",
+            background: "images/Gemini_Generated_Image_3m7pkg3m7pkg3m7p.jpeg",
+            closing:
+              "王の瞳に光が戻り、玉座の間に消えていた色が広がる。王は新しい物語を共に紡ぐことを約束した。",
+            questions: [
+              {
+                text:
+                  "【質問1】『断罪しに来たのか』と問う王への返答は？",
+                options: [
+                  "『そうだ。皆が悲しんでいる』と責める。",
+                  "『断罪ではなく、あなたの物語の最初の読者になりに来ました』と伝える。",
+                  "『何をしたのか教えてください』と質問で返す。",
+                  "黙って光で包み込む。",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "断罪ではなく読者として向き合ったことで、王はあなたを受け入れた。",
+              },
+              {
+                text:
+                  "【質問2】『言葉は無価値だ』と言い切る王に？",
+                options: [
+                  "情熱的に反論する。",
+                  "救ってきた物語を語り、『その言葉が彼らを救いました』と事実を示す。",
+                  "一部同意しつつ反論する。",
+                  "言葉以外の方法を探すと宣言する。",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "これまで救ってきた物語を語ると、言葉の価値が王の心に灯った。",
+              },
+              {
+                text:
+                  "【質問3】『哀しみはどうすればいい？』と問う王へ？",
+                options: [
+                  "哀しみを肯定し価値があると語る。",
+                  "結末をハッピーエンドに書き換えると約束する。",
+                  "『あなたの哀しみから新しい物語を一緒に作りましょう』と提案する。",
+                  "『価値を決めるのはあなた自身です』と委ねる。",
+                ],
+                correctIndex: 2,
+                explanation:
+                  "哀しみから始まる共作を提案すると、王は孤独ではない未来を信じた。",
+              },
+            ],
+          },
+          {
+            id: "scene10",
+            title: "シーン10：君の物語",
+            summary:
+              "沈黙の王は心を開き、ワンディアナに色彩が戻りました。光の扉を前に、紬ちゃん自身の物語の行き先を選ぶ時が来ます。",
+            background: "images/Gemini_Generated_Image_3m7pkh3m7pkh3m7p.jpeg",
+            closing:
+              "光の扉が開き、ワンディアナと現実を結ぶ道が輝く。紬ちゃんは守り人として、二つの世界を行き来できるようになった。",
+            questions: [
+              {
+                text:
+                  "【質問1】別れを告げるノクトに返す言葉は？",
+                options: [
+                  "『また会おう！』と明るく別れる。",
+                  "『君の知恵と勇気がなければここまで来られなかった。本当にありがとう』と感謝を伝える。",
+                  "『寂しくなったら本を思い出して』と慰める。",
+                  "『僕の世界に来てみる？』と誘う。",
+                ],
+                correctIndex: 1,
+                explanation:
+                  "具体的な感謝を伝えると、ノクトとの旅の記憶が温かく結ばれた。",
+              },
+              {
+                text:
+                  "【質問2】王が尋ねる『君自身の物語は？』への答えは？",
+                options: [
+                  "『家に帰ってこの思い出を大切にします』と述べる。",
+                  "『これからもたくさんの物語に出会いたいです』と希望を語る。",
+                  "『一つ終われば次が始まるんですね』と真理を語る。",
+                  "『ワンディアナと僕の世界、二つの物語が繋がる未来がいいです』と願う。",
+                ],
+                correctIndex: 3,
+                explanation:
+                  "二つの世界を繋ぎたいという願いが、冒険で得た学びを示した。",
+              },
+              {
+                text:
+                  "【質問3】守り人の道を選ぶ理由は？",
+                options: [
+                  "冒険を終わらせたくないから。",
+                  "悲しい物語を救い続けたいから。",
+                  "紬は登場人物であり読者でもあるから。",
+                  "みんなと離れたくないから。",
+                ],
+                correctIndex: 2,
+                explanation:
+                  "読者であり登場人物でもあると受け止めた心が、守り人の力となった。",
+              },
+            ],
+          },
+        ];
+
+        let currentScene = null;
+        let currentSceneIndex = -1;
+        let currentQuestionIndex = 0;
+        let prologueState = "intro";
+        let adventureHold = false;
+        let pendingAdvance = null;
+        let pendingShowsPanel = true;
+        let overlayHideTimer = null;
+        let score = 0;
+
+        function showAdventurePanel() {
+          adventureScreen.classList.add("panel-visible");
+          adventurePanel.setAttribute("aria-hidden", "false");
+        }
+
+        function hideAdventurePanel() {
+          adventureScreen.classList.remove("panel-visible");
+          adventurePanel.setAttribute("aria-hidden", "true");
+        }
+
+        function hideOverlayMessage() {
+          if (overlayHideTimer) {
+            clearTimeout(overlayHideTimer);
+            overlayHideTimer = null;
+          }
+          adventureOverlayMessage.classList.remove("visible");
+          overlayHideTimer = setTimeout(() => {
+            overlayHideTimer = null;
+            adventureOverlayMessage.hidden = true;
+            adventureOverlayMessage.innerHTML = "";
+          }, 280);
+        }
+
+        function updateScoreDisplay() {
+          scoreValue.textContent = `${score}`;
+        }
+
+        function adjustScore(amount) {
+          score += amount;
+          updateScoreDisplay();
+        }
+
+        function escapeHtml(value) {
+          return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+        }
+
+        function showOverlayMessage(mainText) {
+          if (overlayHideTimer) {
+            clearTimeout(overlayHideTimer);
+            overlayHideTimer = null;
+          }
+          adventureOverlayMessage.classList.remove("visible");
+          adventureOverlayMessage.innerHTML = `<span class="overlay-main">${escapeHtml(
+            mainText
+          )}</span><span class="overlay-instruction">画面をタップして次へ</span>`;
+          adventureOverlayMessage.hidden = false;
+          requestAnimationFrame(() => {
+            adventureOverlayMessage.classList.add("visible");
+          });
+        }
+
+        adventureScreen.addEventListener("click", () => {
+          if (!adventureScreen.classList.contains("active")) {
+            return;
+          }
+
+          if (adventureHold) {
+            adventureHold = false;
+            hideOverlayMessage();
+            if (pendingShowsPanel) {
+              showAdventurePanel();
+            } else {
+              hideAdventurePanel();
+            }
+
+            if (typeof pendingAdvance === "function") {
+              const action = pendingAdvance;
+              pendingAdvance = null;
+              pendingShowsPanel = true;
+              action();
+            }
+            return;
+          }
+
+          if (!adventureScreen.classList.contains("panel-visible")) {
+            showAdventurePanel();
+          }
+        });
+
+        adventurePanel.addEventListener("click", (event) => {
+          if (adventureScreen.classList.contains("panel-visible")) {
+            event.stopPropagation();
+          }
+        });
+
+        function revealStartButton() {
+          startButton.classList.add("visible");
+          const playPromise = bgm.play();
+
+          if (playPromise && typeof playPromise.catch === "function") {
+            playPromise.catch(() => {
+              /* Some browsers need an extra gesture before audio can play */
+            });
+          }
+        }
+
+        titleScreen.addEventListener("click", revealStartButton, { once: true });
+
+        startButton.addEventListener("click", (event) => {
+          event.stopPropagation();
+          titleScreen.classList.add("is-hidden");
+          document.body.classList.add("scene-mode");
+          prologueState = "intro";
+          score = 0;
+          updateScoreDisplay();
+          scenePrompt.hidden = true;
+          scenePrompt.classList.remove("visible");
+          sceneOverlay.classList.remove("revealed");
+          sceneOverlay.dataset.locked = "false";
+          prologueFeedback.textContent = "";
+          sceneScreen.style.cursor = "pointer";
+          setTimeout(() => {
+            titleScreen.style.display = "none";
+            sceneScreen.classList.add("active");
+          }, 280);
+        });
+
+        sceneScreen.addEventListener("click", () => {
+          if (prologueState === "intro") {
+            if (!sceneOverlay.classList.contains("revealed")) {
+              sceneOverlay.classList.add("revealed");
+              sceneScreen.style.cursor = "default";
+            }
+            return;
+          }
+
+          if (prologueState === "advance") {
+            prologueState = "complete";
+            scenePrompt.classList.remove("visible");
+            setTimeout(() => {
+              scenePrompt.hidden = true;
+            }, 320);
+            sceneScreen.classList.remove("active");
+            sceneScreen.style.display = "none";
+            startAdventure("scene2");
+          }
+        });
+
+        sceneOverlay.addEventListener("click", (event) => {
+          event.stopPropagation();
+        });
+
+        prologueChoices.forEach((button) => {
+          button.addEventListener("click", (event) => {
+            event.stopPropagation();
+            if (sceneOverlay.dataset.locked === "true") {
+              return;
+            }
+
+            const isCorrect = button.dataset.choice === "correct";
+            if (!isCorrect) {
+              adjustScore(-5);
+              prologueFeedback.textContent = "まだ物語の扉は開かない。光の意味をもう一度たどってみて。";
+              return;
+            }
+
+            adjustScore(10);
+            prologueFeedback.textContent = "紬ちゃんの胸に、知らない世界への予感が灯った。";
+            sceneOverlay.dataset.locked = "true";
+            sceneOverlay.classList.remove("revealed");
+            scenePrompt.textContent = "光に包まれた景色をもう一度タップ";
+            scenePrompt.hidden = false;
+            requestAnimationFrame(() => {
+              scenePrompt.classList.add("visible");
+            });
+            sceneScreen.style.cursor = "pointer";
+            prologueState = "advance";
+          });
+        });
+
+        function startAdventure(sceneId) {
+          const nextIndex = scenes.findIndex((scene) => scene.id === sceneId);
+          if (nextIndex === -1) {
+            return;
+          }
+
+          currentSceneIndex = nextIndex;
+          currentScene = scenes[nextIndex];
+          currentQuestionIndex = 0;
+          pendingAdvance = null;
+          pendingShowsPanel = true;
+          adventureHold = false;
+          if (overlayHideTimer) {
+            clearTimeout(overlayHideTimer);
+            overlayHideTimer = null;
+          }
+          adventureOverlayMessage.hidden = true;
+          adventureOverlayMessage.classList.remove("visible");
+          adventureOverlayMessage.innerHTML = "";
+          adventureScreen.style.setProperty(
+            "--scene-art",
+            `url("${currentScene.background}")`
+          );
+          sceneTitle.textContent = currentScene.title;
+          sceneSummary.textContent = currentScene.summary;
+          adventureComplete.hidden = true;
+          adventureComplete.textContent = "";
+          questionCounter.textContent = "";
+          questionText.textContent = "";
+          adventureOptions.innerHTML = "";
+          adventureFeedback.textContent = "";
+          document.body.classList.add("scene-mode");
+          adventureScreen.classList.add("active");
+          hideAdventurePanel();
+          renderQuestion();
+        }
+
+        function renderQuestion() {
+          if (!currentScene) {
+            return;
+          }
+
+          pendingAdvance = null;
+          adventureHold = false;
+          adventureFeedback.textContent = "";
+          adventureFeedback.classList.remove("retry");
+          adventureComplete.hidden = true;
+          adventureComplete.textContent = "";
+
+          const question = currentScene.questions[currentQuestionIndex];
+          questionCounter.textContent = `第${currentQuestionIndex + 1}問 / ${currentScene.questions.length}問`;
+          questionText.textContent = question.text;
+
+          adventureOptions.innerHTML = "";
+          question.options.forEach((optionText, index) => {
+            const optionButton = document.createElement("button");
+            optionButton.type = "button";
+            optionButton.className = "choice-option";
+            const indexSpan = document.createElement("span");
+            indexSpan.className = "choice-index";
+            indexSpan.textContent = index + 1;
+            const labelSpan = document.createElement("span");
+            labelSpan.className = "choice-label";
+            labelSpan.textContent = optionText;
+            optionButton.appendChild(indexSpan);
+            optionButton.appendChild(labelSpan);
+            optionButton.addEventListener("click", (event) => {
+              event.stopPropagation();
+              handleAdventureChoice(index);
+            });
+            adventureOptions.appendChild(optionButton);
+          });
+        }
+
+        function handleAdventureChoice(selectedIndex) {
+          if (!currentScene) {
+            return;
+          }
+
+          const question = currentScene.questions[currentQuestionIndex];
+
+          if (selectedIndex === question.correctIndex) {
+            adventureFeedback.textContent = "";
+            adventureFeedback.classList.remove("retry");
+            adjustScore(10);
+            showOverlayMessage(question.explanation);
+            hideAdventurePanel();
+            adventureHold = true;
+
+            if (currentQuestionIndex === currentScene.questions.length - 1) {
+              pendingAdvance = () => {
+                revealSceneCompletion();
+              };
+              pendingShowsPanel = false;
+            } else {
+              pendingAdvance = () => {
+                currentQuestionIndex += 1;
+                renderQuestion();
+              };
+              pendingShowsPanel = true;
+            }
+          } else {
+            adjustScore(-5);
+            adventureFeedback.textContent = "まだ答えは霧の向こう。もう一度耳を澄ましてみて。";
+            adventureFeedback.classList.add("retry");
+          }
+        }
+
+        function revealSceneCompletion() {
+          if (!currentScene) {
+            return;
+          }
+
+          const closingText = currentScene.closing;
+          const nextIndex = currentSceneIndex + 1;
+
+          hideAdventurePanel();
+          showOverlayMessage(closingText);
+          adventureHold = true;
+
+          if (nextIndex < scenes.length) {
+            pendingAdvance = () => {
+              startAdventure(scenes[nextIndex].id);
+            };
+            pendingShowsPanel = false;
+          } else {
+            pendingAdvance = () => {
+              showAdventurePanel();
+              questionCounter.textContent = "おしまい";
+              questionText.textContent = "";
+              adventureOptions.innerHTML = "";
+              adventureFeedback.textContent = "";
+              adventureComplete.hidden = false;
+              adventureComplete.textContent =
+                "紬ちゃんの旅は光の扉の向こうへと続いていく。物語は、あなたの心に託された。";
+            };
+            pendingShowsPanel = true;
+          }
+        }
+      })();
+    </script>
+
+  </body>
+</html>
